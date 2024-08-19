@@ -8,8 +8,7 @@ import '../styles/layout/layout.scss';
 import '../styles/demo/Demos.scss';
 import { useEffect, useState } from 'react';
 import LoginPage from './(full-page)/auth/login/page';
-import NewUserPage from './(full-page)/auth/newuser/page';
-
+import { usePathname } from 'next/navigation';
 
 interface RootLayoutProps {
     children: React.ReactNode;
@@ -23,32 +22,25 @@ const checkAuth = () => {
         return false;
     }
 }
-const checkNewUser = () => {
-    if (localStorage.getItem('NEWUSER') === 'true' && localStorage.getItem('C') === '0') {
-        localStorage.setItem('C', '1');
-        return true;
-    } else {
-        localStorage.setItem('NEWUSER', 'false');
-        localStorage.setItem('C', '0');
-        return false;
-    }
-}
 
 export default function RootLayout({ children }: RootLayoutProps) {
 
-
+    const [pageLoaded, setPageLoaded] = useState(false);
     const [autenticado, setAutenticado] = useState(false);
-    const [newUser, setNewUser] = useState(false);
+    const pathname = usePathname();
 
     useEffect(() => {
-        
-        setAutenticado(checkAuth());
-        setNewUser(checkNewUser());
-        
-    }, []);
+        if (pathname.startsWith('/pages') || pathname == '/') {
+            setAutenticado(checkAuth());
+            setPageLoaded(true);
+        } else {
+            setAutenticado(true);
+            setPageLoaded(true);
+        }
+    }, [pathname]);
 
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="pt-br" suppressHydrationWarning>
             <head>
                 <link id="theme-css" href={`/themes/lara-light-indigo/theme.css`} rel="stylesheet"></link>
             </head>
@@ -57,19 +49,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
                     <PrimeReactProvider>
                         <LayoutProvider>{children}</LayoutProvider>
                     </PrimeReactProvider>
-                        : newUser ? 
-                        <PrimeReactProvider>
-                            <LayoutProvider>
-                                <NewUserPage />
-                            </LayoutProvider>
-                        </PrimeReactProvider>
-                        :
+                    :
+                    pageLoaded ?
                         <PrimeReactProvider>
                             <LayoutProvider>
                                 <LoginPage />
                             </LayoutProvider>
                         </PrimeReactProvider>
-
+                        :
+                        null
                 }
             </body>
         </html>

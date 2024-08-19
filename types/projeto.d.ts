@@ -18,4 +18,14 @@ declare namespace Projeto {
         descricao: string;
         paciente: Paciente;
     }
+
+    type Agendamento = {
+        id?: number;
+        nomePaciente: string;
+        telefone: string;
+        dataNascimento: string;
+        tipoAtendiento: string;
+        inicio: string;
+        fim: string;
+    }
 }
