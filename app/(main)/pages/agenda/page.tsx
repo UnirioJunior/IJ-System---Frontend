@@ -13,7 +13,7 @@ import { AgendamentoService } from '../../../../service/AgendamentoService';
 import { Toast } from 'primereact/toast';
 import { InputMask, InputMaskChangeEvent } from 'primereact/inputmask';
 import { RadioButton } from 'primereact/radiobutton';
-import { createEventId } from '/IJ System/IJ System - Frontend/event-utils'
+import { createEventId } from '/IJ System/IJ System - Frontend/app/(main)/event-utils'
 
 export default function Agenda() {
     let agendamentoVazio: Projeto.Agendamento = {
