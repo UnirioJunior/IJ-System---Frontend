@@ -61,6 +61,8 @@ const Principal: Page = () => {
                 life: 3000
             });
         })
+        setDescricaoAnamnese(anamneseVazia);
+        setPaciente(pacienteVazio);
     }
 
     const onSelectPacienteChange = (paciente: Projeto.Paciente) => {
