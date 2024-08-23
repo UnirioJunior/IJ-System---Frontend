@@ -17,9 +17,9 @@ const AppMenu = () => {
         {
             label: 'Cadastros',
             items: [
+                { label: 'Meus Atendimentos', icon: 'pi pi-folder-open', to: '/pages/atendimentos' },
                 { label: 'Cadastro de Pacientes', icon: 'pi pi-user-plus', to: '/pages/paciente' },
                 { label: 'Agenda', icon: 'pi pi-calendar', to: '/pages/agenda' },
-
             ]
         },
 

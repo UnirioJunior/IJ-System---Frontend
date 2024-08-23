@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -13,6 +13,7 @@ import { AgendamentoService } from '../../../../service/AgendamentoService';
 import { Toast } from 'primereact/toast';
 import { InputMask, InputMaskChangeEvent } from 'primereact/inputmask';
 import { RadioButton } from 'primereact/radiobutton';
+import { UsuarioService } from '../../../../service/UsuarioService';
 
 let eventGuid = 0
 let todayStr = new Date().toISOString().replace(/T.*$/, '')
@@ -23,13 +24,18 @@ function createEventId() {
 export default function Agenda() {
     let agendamentoVazio: Projeto.Agendamento = {
         id: 0,
+        usuario: { id: 0, name: '', login: '', senha: '', email: '', situacao: '' },
         nomePaciente: '',
         telefone: '',
         dataNascimento: '',
-        tipoAtendiento: '',
+        tipoAtendimento: '',
         inicio: '',
         fim: '',
     };
+
+    let usuarioVazia: Projeto.Usuario = {
+        id: 0, name: '', login: '', senha: '', email: '', situacao: ''
+    }
 
     const [agendamento, setAgendamento] = useState<Projeto.Agendamento>(agendamentoVazio);
     const [dialogoAgendamento, setDialogoAgendamento] = useState(false);
@@ -45,44 +51,80 @@ export default function Agenda() {
     const [fim, setFim] = useState<string | null>(null);
     const [botaoPresencial, setBotaoPresencial] = useState<string | null>(null);
     const [botaoOnline, setBotaoOnline] = useState<string | null>(null);
+    const [userId, setUserId] = useState<number | null>(null);
+    const userIdFromStorage = localStorage.getItem('USER_ID');
+    const userIdNumber = userIdFromStorage ? parseInt(userIdFromStorage, 10) : null;
+    const [usuarioLogado, setUsuarioLogado] = useState<Projeto.Usuario>(usuarioVazia);
+    const usuarioService = useMemo(() => new UsuarioService(), []);
+
+
 
     useEffect(() => {
-        const carregarAgendamentos = async () => {
-            try {
-                const response = await agendamentoService.listarTodos();
-                const agendamentos = response.data;
-
-                const eventos = agendamentos.map(agendamento => ({
-                    id: agendamento.id,
-                    title: agendamento.nomePaciente,
-                    start: agendamento.inicio,
-                    end: agendamento.fim,
-                    allDay: false
-                }));
-
-                setEvents(eventos);
-
-                if (calendarRef.current) {
-                    calendarRef.current.getApi().addEventSource(eventos);
-                }
-            } catch (error) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Erro!',
-                    detail: 'Falha ao carregar os agendamentos.',
-                    life: 3000
-                });
-            }
-        };
-
-        carregarAgendamentos();
+        const userIdFromStorage = localStorage.getItem('USER_ID');
+        const userIdNumber = userIdFromStorage ? parseInt(userIdFromStorage, 10) : null;
+        setUserId(userIdNumber);
+        if (userIdNumber !== null) {
+            usuarioService.buscarPordId(userIdNumber).then((response) => {
+                setUsuarioLogado(response.data);
+            });
+        }
     }, []);
+
+    useEffect(() => {
+        if (userId !== null) { // Verifique se userId está definido
+            const carregarAgendamentos = async () => {
+                try {
+                    const response = await agendamentoService.listarTodos();
+                    const agendamentos = response.data;
+
+                    // Filtra agendamentos com base no userId
+                    const agendamentosFiltrados = agendamentos.filter(
+                        agendamento => agendamento.usuario.id === userId
+                    );
+
+                    // Mapeia agendamentos filtrados para o formato do calendário
+                    const eventos = agendamentosFiltrados.map(agendamento => ({
+                        id: agendamento.id,
+                        title: agendamento.nomePaciente,
+                        start: agendamento.inicio,
+                        end: agendamento.fim,
+                        allDay: false
+                    }));
+
+                    setEvents(eventos);
+
+                    if (calendarRef.current) {
+                        calendarRef.current.getApi().addEventSource(eventos);
+                    }
+                } catch (error) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Erro!',
+                        detail: 'Falha ao carregar os agendamentos.',
+                        life: 3000
+                    });
+                }
+            };
+
+            carregarAgendamentos();
+        }
+    }, [userId]);
+
+    useEffect(() => {
+        if (usuarioLogado) {
+            setAgendamento(prevState => ({
+                ...prevState,
+                usuario: usuarioLogado
+            }));
+        }
+    }, [usuarioLogado]);
 
     function handleWeekendsToggle() {
         setWeekendsVisible(!weekendsVisible);
     }
 
     const salvarAgendamento = () => {
+        //console.log('JSON enviado:', JSON.stringify(agendamento, null, 2));
         if (!calendarRef.current) return;
 
         const calendarApi = calendarRef.current.getApi();
@@ -271,7 +313,7 @@ export default function Agenda() {
                             className="field"
                             name="option"
                             value="Presencial"
-                            checked={agendamento.tipoAtendiento === 'Presencial'}
+                            checked={agendamento.tipoAtendimento === 'Presencial'}
                             onChange={(e) => setAgendamento(prev => ({ ...prev, tipoAtendiento: e.value }))}
                         />
                         <label htmlFor="option1" className="field">Presencial</label>
@@ -280,7 +322,7 @@ export default function Agenda() {
                             className="field"
                             name="option"
                             value="On-line"
-                            checked={agendamento.tipoAtendiento === 'On-line'}
+                            checked={agendamento.tipoAtendimento === 'On-line'}
                             onChange={(e) => setAgendamento(prev => ({ ...prev, tipoAtendiento: e.value }))}
                         />
                         <label htmlFor="option2">On-line</label>

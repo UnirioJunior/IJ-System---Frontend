@@ -1,10 +1,10 @@
 import axios from "axios";
-import { BaseService } from "./BaseService";
+import { axiosInstance, BaseService } from "./BaseService";
 
 
 export class UsuarioService extends BaseService {
 
-    constructor(){
+    constructor() {
         super("/usuario");
     }
 

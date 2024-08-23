@@ -11,13 +11,19 @@ import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Projeto } from '../../../../types/types';
-import {PacienteService } from '../../../../service/PacienteService'; 
+import { PacienteService } from '../../../../service/PacienteService';
+import { UsuarioService } from '../../../../service/UsuarioService';
 
 const Paciente = () => {
     let pacienteVazio: Projeto.Paciente = {
         id: 0,
-        name: ''
+        name: '',
+        usuario: { id: 0, name: '', login: '', senha: '', email: '', situacao: '' }
     };
+
+    let usuarioVazia: Projeto.Usuario = {
+        id: 0, name: '', login: '', senha: '', email: '', situacao: ''
+    }
 
     const [pacientessss, setPacientessss] = useState<Projeto.Paciente[] | null>(null);
     const [pacienteDialog, setPacienteDialog] = useState(false);
@@ -30,18 +36,37 @@ const Paciente = () => {
     const toast = useRef<Toast>(null);
     const dt = useRef<DataTable<any>>(null);
     const pacienteService = useMemo(() => new PacienteService(), []);
+    const [userId, setUserId] = useState<number | null>(null);
+    const [usuarioLogado, setUsuarioLogado] = useState<Projeto.Usuario>(usuarioVazia);
+    const usuarioService = useMemo(() => new UsuarioService(), []);
 
     useEffect(() => {
-        if (!pacientessss) {
+        const userIdFromStorage = localStorage.getItem('USER_ID');
+        const userIdNumber = userIdFromStorage ? parseInt(userIdFromStorage, 10) : null;
+        setUserId(userIdNumber);
+        if (userIdNumber !== null) {
+            usuarioService.buscarPordId(userIdNumber).then((response) => {
+                setUsuarioLogado(response.data);
+            });
+        }
+    }, []);
+
+    useEffect(() => {
+        if (userId !== null) {
             pacienteService.listarTodos()
                 .then((response) => {
-                    console.log(response.data);
-                    setPacientessss(response.data);
-                }).catch((error) => {
-                    console.log(error);
+                    //console.log(response.data);
+                    // Filtra os pacientes pelo userId
+                    const pacientesFiltrados = response.data.filter((paciente: Projeto.Paciente) =>
+                        paciente.usuario.id === userId
+                    );
+                    setPacientessss(pacientesFiltrados);
                 })
+                .catch((error) => {
+                    //console.log("erro ao listar meus pacientes");
+                });
         }
-    }, [pacienteService, paciente]);
+    }, [userId, pacienteService]);
 
     const openNew = () => {
         setPaciente(pacienteVazio);
@@ -65,8 +90,16 @@ const Paciente = () => {
     const savePaciente = () => {
         setSubmitted(true);
 
-        if (!paciente.id) {
-            pacienteService.inserir(paciente)
+        // Associa o usuário logado ao paciente
+        const pacienteAtualizado = {
+            ...paciente,
+            usuario: usuarioLogado, // Adiciona o usuário logado ao paciente
+        };
+
+        if (!pacienteAtualizado.id) {
+
+            //console.log('JSON enviado:', JSON.stringify(pacienteAtualizado, null, 2));
+            pacienteService.inserir(pacienteAtualizado)
                 .then((response) => {
                     setPacienteDialog(false);
                     setPaciente(pacienteVazio);
@@ -82,10 +115,10 @@ const Paciente = () => {
                         severity: 'error',
                         summary: 'Erro!',
                         detail: 'Erro ao salvar!' + error.data.message
-                    })
+                    });
                 });
         } else {
-            pacienteService.alterar(paciente)
+            pacienteService.alterar(pacienteAtualizado)
                 .then((response) => {
                     setPacienteDialog(false);
                     setPaciente(pacienteVazio);
@@ -101,8 +134,8 @@ const Paciente = () => {
                         severity: 'error',
                         summary: 'Erro!',
                         detail: 'Erro ao alterar!' + error.data.message
-                    })
-                })
+                    });
+                });
         }
     }
 
@@ -179,7 +212,7 @@ const Paciente = () => {
         _paciente[`${name}`] = val;
 
         setPaciente(_paciente);
-        
+
     };
 
     const leftToolbarTemplate = () => {
@@ -220,9 +253,9 @@ const Paciente = () => {
         );
     };
 
-    
 
-    
+
+
 
     const actionBodyTemplate = (rowData: Projeto.Paciente) => {
         return (

@@ -11,21 +11,26 @@ declare namespace Projeto {
     type Paciente = {
         id?: number;
         name: string;
+        usuario: Usuario;
     };
 
     type Anamnese = {
         id?: number;
         descricao: string;
         paciente: Paciente;
+        usuario: Usuario;
+        data: string;
     }
 
     type Agendamento = {
         id?: number;
+        usuario: Usuario;
         nomePaciente: string;
         telefone: string;
         dataNascimento: string;
-        tipoAtendiento: string;
+        tipoAtendimento: string;
         inicio: string;
         fim: string;
     }
+
 }

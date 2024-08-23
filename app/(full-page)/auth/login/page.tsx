@@ -11,11 +11,19 @@ import { classNames } from 'primereact/utils';
 import { LoginService } from '../../../../service/LoginService';
 import { Toast } from 'primereact/toast';
 import Link from 'next/link';
+import jwt_decode from "jwt-decode";
+import jwt from 'jsonwebtoken';
+
+
+
+
 
 const LoginPage = () => {
 
     const [login, setLogin] = useState('');
     const [senha, setSenha] = useState('');
+    // Decodifica o token
+
 
     const [checked, setChecked] = useState(false);
     const { layoutConfig } = useContext(LayoutContext);
@@ -32,14 +40,26 @@ const LoginPage = () => {
     const efetuarLogin = () => {
         loginService.login(login, senha)
             .then((response) => {
-                if (response.data.token != 'Acesso negado') {
-                    console.log("Sucesso");
-                    console.log(response.data.token);
+                if (response.data.token !== 'Acesso negado') {
+                    const token = response.data.token;
+                    localStorage.setItem('TOKEN_APLICACAO_FRONTEND', token);
 
-                    localStorage.setItem('TOKEN_APLICACAO_FRONTEND', response.data.token);
+                    try {
+                        // Decodifica o token para obter o ID do usuário
+                        const decodedToken = jwt.decode(token);
+                        const userId = decodedToken.userId; // Certifique-se de que o campo `userId` está presente
 
-                    router.push('/');
-                    window.location.reload();
+                        if (userId) {
+                            localStorage.setItem('USER_ID', userId);
+                        } else {
+                            console.log('ID do usuário não encontrado no token.');
+                        }
+
+                        router.push('/');
+                        window.location.reload();
+                    } catch (error) {
+                        console.error('Erro ao decodificar o token:', error);
+                    }
                 } else {
                     throw new Error('Acesso negado');
                 }
