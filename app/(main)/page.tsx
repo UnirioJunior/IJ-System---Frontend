@@ -90,7 +90,7 @@ const Principal: Page = () => {
 
     const salvarAnamnese = () => {
         descricaoAnamnese.data = new Date().toLocaleDateString("pt-BR") + '-' + new Date().toLocaleTimeString("pt-BR");
-        //console.log('JSON enviado:', JSON.stringify(descricaoAnamnese, null, 2));
+        console.log('JSON enviado:', JSON.stringify(descricaoAnamnese, null, 2));
         anamneseService.inserir(descricaoAnamnese).then((response) => {
             toast.current?.show({
                 severity: 'success',
