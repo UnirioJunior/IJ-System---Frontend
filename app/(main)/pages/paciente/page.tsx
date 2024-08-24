@@ -49,9 +49,10 @@ const Paciente = () => {
                 setUsuarioLogado(response.data);
             });
         }
-    }, []);
+        carregarPacientes();
+    }, [userId, pacienteService]);
 
-    useEffect(() => {
+    const carregarPacientes = () => {
         if (userId !== null) {
             pacienteService.listarTodos()
                 .then((response) => {
@@ -63,10 +64,11 @@ const Paciente = () => {
                     setPacientessss(pacientesFiltrados);
                 })
                 .catch((error) => {
+                    console.log("entrei no catch")
                     //console.log("erro ao listar meus pacientes");
                 });
         }
-    }, [userId, pacienteService]);
+    }
 
     const openNew = () => {
         setPaciente(pacienteVazio);
@@ -90,26 +92,24 @@ const Paciente = () => {
     const savePaciente = () => {
         setSubmitted(true);
 
-        // Associa o usuário logado ao paciente
         const pacienteAtualizado = {
             ...paciente,
             usuario: usuarioLogado, // Adiciona o usuário logado ao paciente
         };
 
         if (!pacienteAtualizado.id) {
-
-            //console.log('JSON enviado:', JSON.stringify(pacienteAtualizado, null, 2));
             pacienteService.inserir(pacienteAtualizado)
                 .then((response) => {
                     setPacienteDialog(false);
                     setPaciente(pacienteVazio);
-                    setPacientessss(null);
+                    carregarPacientes(); // Atualiza a lista após salvar
                     toast.current?.show({
                         severity: 'info',
                         summary: 'Sucesso!',
                         detail: 'Paciente cadastrado com sucesso!'
                     });
-                }).catch((error) => {
+                })
+                .catch((error) => {
                     console.log(error.data.message);
                     toast.current?.show({
                         severity: 'error',
@@ -122,13 +122,14 @@ const Paciente = () => {
                 .then((response) => {
                     setPacienteDialog(false);
                     setPaciente(pacienteVazio);
-                    setPacientessss(null);
+                    carregarPacientes(); // Atualiza a lista após alterar
                     toast.current?.show({
                         severity: 'info',
                         summary: 'Sucesso!',
                         detail: 'Paciente alterado com sucesso!'
                     });
-                }).catch((error) => {
+                })
+                .catch((error) => {
                     console.log(error.data.message);
                     toast.current?.show({
                         severity: 'error',
@@ -137,40 +138,46 @@ const Paciente = () => {
                     });
                 });
         }
-    }
+    };
+
 
     const editPacientes = (paciente: Projeto.Paciente) => {
         setPaciente({ ...paciente });
         setPacienteDialog(true);
+        carregarPacientes();
     };
 
     const confirmDeletePaciente = (paciente: Projeto.Paciente) => {
         setPaciente(paciente);
         setDeletePacienteDialog(true);
+        carregarPacientes();
     };
 
     const deletePaciente = () => {
         if (paciente.id) {
-            pacienteService.excluir(paciente.id).then((response) => {
-                setPaciente(pacienteVazio);
-                setDeletePacienteDialog(false);
-                setPacientessss(null);
-                toast.current?.show({
-                    severity: 'success',
-                    summary: 'Sucesso!',
-                    detail: 'Paciente Deletado com Sucesso!',
-                    life: 3000
+            pacienteService.excluir(paciente.id)
+                .then((response) => {
+                    setPaciente(pacienteVazio);
+                    setDeletePacienteDialog(false);
+                    carregarPacientes(); // Atualiza a lista após deletar
+                    toast.current?.show({
+                        severity: 'success',
+                        summary: 'Sucesso!',
+                        detail: 'Paciente Deletado com Sucesso!',
+                        life: 3000
+                    });
+                })
+                .catch((error) => {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Erro!',
+                        detail: 'Erro ao deletar o Paciente!',
+                        life: 3000
+                    });
                 });
-            }).catch((error) => {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Erro!',
-                    detail: 'Erro ao deletar o Paciente!',
-                    life: 3000
-                });
-            });
         }
     };
+
 
     const exportCSV = () => {
         dt.current?.exportCSV();
@@ -181,29 +188,33 @@ const Paciente = () => {
     };
 
     const deleteSelectedPacientessss = () => {
-
         Promise.all(selectedPacientessss.map(async (_paciente) => {
             if (_paciente.id) {
                 await pacienteService.excluir(_paciente.id);
             }
-        })).then((response) => {
-            setPacientessss(null);
-            setSelectedPacientessss([]);
-            setDeletePacientessssDialog(false);
-            toast.current?.show({
-                severity: 'success',
-                summary: 'Sucesso!',
-                detail: 'Paciente Deletados com Sucesso!',
-                life: 3000
-            });
-        }).catch((error) => {
-            toast.current?.show({
-                severity: 'error',
-                summary: 'Erro!',
-                detail: 'Erro ao deletar Pacientes!',
-                life: 3000
+        }))
+            .then((response) => {
+                setPacientessss(null);
+                setSelectedPacientessss([]);
+                setDeletePacientessssDialog(false);
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Sucesso!',
+                    detail: 'Pacientes deletados com sucesso!',
+                    life: 3000
+                });
+
+                // Chame carregarPacientes aqui para atualizar a lista
+                carregarPacientes();
             })
-        });
+            .catch((error) => {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Erro!',
+                    detail: 'Erro ao deletar pacientes!',
+                    life: 3000
+                });
+            });
     };
 
     const onInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, name: string) => {

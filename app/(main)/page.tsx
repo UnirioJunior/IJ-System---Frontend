@@ -68,10 +68,10 @@ const Principal: Page = () => {
                 usuario: usuarioLogado
             }));
         }
+        carregarPacientes();
+    }, [usuarioLogado, userId, pacienteService]);
 
-    }, [usuarioLogado]);
-
-    useEffect(() => {
+    const carregarPacientes = () => {
         if (userId !== null) {
             pacienteService.listarTodos()
                 .then((response) => {
@@ -86,7 +86,7 @@ const Principal: Page = () => {
                     //console.log("erro ao listar meus pacientes");
                 });
         }
-    }, [userId, pacienteService]);
+    }
 
     const salvarAnamnese = () => {
         descricaoAnamnese.data = new Date().toLocaleDateString("pt-BR") + '-' + new Date().toLocaleTimeString("pt-BR");
@@ -141,26 +141,24 @@ const Principal: Page = () => {
     const savePaciente = () => {
         setSubmitted(true);
 
-        // Associa o usuário logado ao paciente
         const pacienteAtualizado = {
             ...paciente,
             usuario: usuarioLogado, // Adiciona o usuário logado ao paciente
         };
 
         if (!pacienteAtualizado.id) {
-
-            //console.log('JSON enviado:', JSON.stringify(pacienteAtualizado, null, 2));
             pacienteService.inserir(pacienteAtualizado)
                 .then((response) => {
                     setPacienteDialog(false);
                     setPaciente(pacienteVazio);
-                    setPacientessss(null);
+                    carregarPacientes(); // Atualiza a lista após salvar
                     toast.current?.show({
                         severity: 'info',
                         summary: 'Sucesso!',
                         detail: 'Paciente cadastrado com sucesso!'
                     });
-                }).catch((error) => {
+                })
+                .catch((error) => {
                     console.log(error.data.message);
                     toast.current?.show({
                         severity: 'error',
@@ -173,13 +171,14 @@ const Principal: Page = () => {
                 .then((response) => {
                     setPacienteDialog(false);
                     setPaciente(pacienteVazio);
-                    setPacientessss(null);
+                    carregarPacientes(); // Atualiza a lista após alterar
                     toast.current?.show({
                         severity: 'info',
                         summary: 'Sucesso!',
                         detail: 'Paciente alterado com sucesso!'
                     });
-                }).catch((error) => {
+                })
+                .catch((error) => {
                     console.log(error.data.message);
                     toast.current?.show({
                         severity: 'error',
@@ -188,7 +187,7 @@ const Principal: Page = () => {
                     });
                 });
         }
-    }
+    };
 
     const pacienteDialogFooter = (
         <>
