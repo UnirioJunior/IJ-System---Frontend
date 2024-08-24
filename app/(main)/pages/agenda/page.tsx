@@ -203,6 +203,7 @@ export default function Agenda() {
                 const agendamentoCompleto = response.data;
                 setAgendamento(agendamentoCompleto);
                 setAbrirAgendamento(true);
+
             })
             .catch((error) => {
                 toast.current?.show({
@@ -224,6 +225,7 @@ export default function Agenda() {
     };
 
     const fecharDialogoAbrirAgendamento = () => {
+        setAgendamento(agendamentoVazio);
         setAbrirAgendamento(false);
     };
 
