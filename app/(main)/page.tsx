@@ -3,7 +3,6 @@ import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { InputTextarea } from 'primereact/inputtextarea';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CountryService } from '../../demo/service/CountryService';
 import type { Demo, Page } from '../../types/types';
 import { Projeto } from '../../types/types';
 import { PacienteService } from '../../service/PacienteService';
@@ -12,7 +11,6 @@ import { Toast } from 'primereact/toast';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { classNames } from 'primereact/utils';
-import { C } from '@fullcalendar/core/internal-common';
 import { UsuarioService } from '../../service/UsuarioService';
 
 const Principal: Page = () => {

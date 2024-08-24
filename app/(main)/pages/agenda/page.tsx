@@ -39,6 +39,7 @@ export default function Agenda() {
 
     const [agendamento, setAgendamento] = useState<Projeto.Agendamento>(agendamentoVazio);
     const [dialogoAgendamento, setDialogoAgendamento] = useState(false);
+    const [abrirAgendamento, setAbrirAgendamento] = useState(false);
     const [weekendsVisible, setWeekendsVisible] = useState(true);
     const [currentEvents, setCurrentEvents] = useState([]);
     const [isAllDay, setIsAllDay] = useState(true);
@@ -49,11 +50,8 @@ export default function Agenda() {
     const inputRef = useRef<HTMLInputElement>(null);
     const [inicio, setInicio] = useState<string | null>(null);
     const [fim, setFim] = useState<string | null>(null);
-    const [botaoPresencial, setBotaoPresencial] = useState<string | null>(null);
-    const [botaoOnline, setBotaoOnline] = useState<string | null>(null);
     const [userId, setUserId] = useState<number | null>(null);
     const userIdFromStorage = localStorage.getItem('USER_ID');
-    const userIdNumber = userIdFromStorage ? parseInt(userIdFromStorage, 10) : null;
     const [usuarioLogado, setUsuarioLogado] = useState<Projeto.Usuario>(usuarioVazia);
     const usuarioService = useMemo(() => new UsuarioService(), []);
 
@@ -159,7 +157,9 @@ export default function Agenda() {
         });
     };
 
-    function aoSelecionarData(selectInfo) {
+
+
+    const aoSelecionarData = (selectInfo) => {
         let calendarApi = calendarRef.current?.getApi();
 
         if (!calendarApi) {
@@ -173,42 +173,72 @@ export default function Agenda() {
         const inicio = selectInfo.startStr;
         const fim = selectInfo.endStr;
 
+        // Atualiza o estado do agendamento com os novos valores
         setAgendamento(prevAgendamento => ({
             ...prevAgendamento,
             inicio: inicio,
             fim: fim
         }));
 
+        // Atualiza estados individuais se necessário
         setInicio(inicio);
         setFim(fim);
-
         setIsAllDay(selectInfo.allDay);
 
+        // Usa o estado atualizado
         if (currentView === 'timeGridDay') {
             prepararNovoAgendamento();
         } else {
             calendarApi.changeView('timeGridDay', selectInfo.startStr);
         }
-    }
+    };
+
+
 
     function aoClicarAgendado(clickInfo) {
-        if (confirm(`Seu compromisso '${clickInfo.event.title}'`)) {
-            clickInfo.event.remove();
-        }
+        const agendamentoId = clickInfo.event.id;
+
+        agendamentoService.buscarPordId(agendamentoId)
+            .then((response) => {
+                const agendamentoCompleto = response.data;
+                setAgendamento(agendamentoCompleto);
+                setAbrirAgendamento(true);
+            })
+            .catch((error) => {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Erro!',
+                    detail: 'Falha ao carregar os detalhes do agendamento.',
+                    life: 3000
+                });
+            });
     }
+
 
     function handleEvents(events) {
         setCurrentEvents(events);
     }
 
-    const fecharDialogo = () => {
+    const fecharDialogoAgendamento = () => {
         setDialogoAgendamento(false);
+    };
+
+    const fecharDialogoAbrirAgendamento = () => {
+        setAbrirAgendamento(false);
     };
 
     const agendamentoDialogoFooter = (
         <>
-            <Button label="Cancel" icon="pi pi-times" text onClick={fecharDialogo} />
+            <Button label="Cancel" icon="pi pi-times" text onClick={fecharDialogoAgendamento} />
             <Button label="Save" icon="pi pi-check" text onClick={salvarAgendamento} />
+        </>
+    );
+
+    const abrirAgendamentoDialogoFooter = (
+        <>
+            <Button label="Cancel" icon="pi pi-times" text onClick={() => console.log("Cancelado")} />
+            <Button label="Excluir" icon="pi pi-times" text onClick={() => console.log("Excluido")} />
+            <Button label="Confirmar" icon="pi pi-check" text onClick={() => console.log("Confirmado")} />
         </>
     );
 
@@ -216,13 +246,22 @@ export default function Agenda() {
         const val = (e.target && e.target.value) || '';
         setAgendamento(prevAgendamento => ({
             ...prevAgendamento,
-            [name]: val
+            [name]: val,
+            usuario: usuarioLogado // Garante que o usuário logado seja sempre incluído
         }));
     };
 
+
     const prepararNovoAgendamento = () => {
+        setAgendamento(prevAgendamento => ({
+            ...prevAgendamento, // Mantém os valores existentes
+            usuario: usuarioLogado, // Define o usuário logado
+            // Você pode resetar apenas os campos necessários, se necessário
+        }));
         setDialogoAgendamento(true);
-    }
+    };
+
+
 
     const handleFocus = () => {
         if (inputRef.current) {
@@ -243,6 +282,21 @@ export default function Agenda() {
             </label>
         </div>
     );
+
+    const abrirAgendamentoHeader = (
+        <div style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
+            <label htmlFor="Agendamento" style={{ fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>
+                Agendamento
+            </label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+                Início: {agendamento?.inicio ? format(new Date(agendamento.inicio), 'dd-MM-yyyy HH:mm') : 'N/A'}
+            </label>
+            <label style={{ display: 'block' }}>
+                Fim: {agendamento?.fim ? format(new Date(agendamento.fim), 'dd-MM-yyyy HH:mm') : 'N/A'}
+            </label>
+        </div>
+    );
+
 
     return (
         <div className='demo-app'>
@@ -271,7 +325,7 @@ export default function Agenda() {
                     eventsSet={handleEvents}
                     events={events}
                 />
-                <Dialog visible={dialogoAgendamento} style={{ width: '450px' }} header={dialogHeader} modal className="p-fluid" footer={agendamentoDialogoFooter} onHide={fecharDialogo} >
+                <Dialog visible={dialogoAgendamento} style={{ width: '450px' }} header={dialogHeader} modal className="p-fluid" footer={agendamentoDialogoFooter} onHide={fecharDialogoAgendamento} >
                     <div className="field">
                         <label htmlFor="Nome">Nome: </label>
                         <InputText
@@ -314,18 +368,56 @@ export default function Agenda() {
                             name="option"
                             value="Presencial"
                             checked={agendamento.tipoAtendimento === 'Presencial'}
-                            onChange={(e) => setAgendamento(prev => ({ ...prev, tipoAtendiento: e.value }))}
+                            onChange={(e) => setAgendamento(prev => ({ ...prev, tipoAtendimento: e.value }))}
                         />
                         <label htmlFor="option1" className="field">Presencial</label>
+
                         <RadioButton
                             inputId="option2"
                             className="field"
                             name="option"
                             value="On-line"
                             checked={agendamento.tipoAtendimento === 'On-line'}
-                            onChange={(e) => setAgendamento(prev => ({ ...prev, tipoAtendiento: e.value }))}
+                            onChange={(e) => setAgendamento(prev => ({ ...prev, tipoAtendimento: e.value }))}
                         />
                         <label htmlFor="option2">On-line</label>
+                    </div>
+                </Dialog>
+                <Dialog visible={abrirAgendamento} style={{ width: '450px' }} header={abrirAgendamentoHeader} modal className="p-fluid" footer={abrirAgendamentoDialogoFooter} onHide={fecharDialogoAbrirAgendamento}>
+                    <div className="field">
+                        <label htmlFor="Nome">Nome: </label>
+                        <InputText
+                            id="nome"
+                            value={agendamento.nomePaciente}
+                            disabled
+                            placeholder="Nome do paciente"
+                        />
+                    </div>
+                    <div className="field">
+                        <label htmlFor="Telefone">Telefone: </label>
+                        <InputText
+                            id="telefone"
+                            value={agendamento.telefone}
+                            disabled
+                            placeholder="Telefone do paciente"
+                        />
+                    </div>
+                    <div className="field">
+                        <label htmlFor="dataNascimento">Data de Nascimento: </label>
+                        <InputText
+                            id="dataNascimento"
+                            value={agendamento.dataNascimento} //
+                            disabled
+                            placeholder="Data de nascimento do paciente"
+                        />
+                    </div>
+                    <div className="formgroup-inline">
+                        <label htmlFor="tipoAtendimento"> Tipo do Atendimento</label>
+                        <InputText
+                            id='tipoAtendimento'
+                            value={agendamento.tipoAtendimento}
+                            disabled
+                        />
                     </div>
                 </Dialog>
             </div>
@@ -337,7 +429,11 @@ function renderEventContent(eventInfo) {
     return (
         <>
             <b>{eventInfo.timeText}</b>
+            <span style={{ marginRight: '8px' }}></span>
             <i>{eventInfo.event.title}</i>
         </>
     );
 }
+
+
+
