@@ -44,8 +44,9 @@ export class WhatsAppService {
     }
 
     iniciarSessao(sessionId: string) {
-        return axiosInstance.get(`${this.url}/session/start/${sessionId}`);
+        return axiosInstance.get(`${this.url.replace(/\/+$/, '')}/session/start/${sessionId}`);
     }
+
 
     // Nova função para obter o QR Code
     async gerarQRCode(sessionId: string): Promise<Blob> {
