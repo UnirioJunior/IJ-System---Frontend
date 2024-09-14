@@ -1,85 +1,77 @@
 import axios from "axios";
 
+// Configurando a instância do Axios com a base URL vinda do arquivo .env
 export const axiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_WHATSAPP_URL_API // URL vinda do .env
+    baseURL: process.env.NEXT_PUBLIC_WHATSAPP_URL_API
 });
 
 export class WhatsAppService {
     private url: string;
 
     constructor(url: string) {
-        this.url = url;
+        this.url = url.replace(/\/+$/, '');  // Remove qualquer barra no final da URL
 
+        // Interceptor para adicionar a API Key em todas as requisições
         axiosInstance.interceptors.request.use(
             (config) => {
                 const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-                //console.log("API Key:", apiKey); // Verifica se a chave está sendo obtida corretamente
-
                 if (apiKey) {
                     config.headers['x-api-key'] = apiKey;
                 }
-
-                //console.log("Headers da requisição:", config.headers); // Verifica todos os headers antes de enviar a requisição
-
                 return config;
             },
             (error) => Promise.reject(error)
         );
 
+        // Interceptor para tratar respostas e possíveis erros
         axiosInstance.interceptors.response.use(
-            (response) => {
-                //console.log("Resposta recebida com sucesso:", response.status); // Verifica o status de sucesso da resposta
-                return response;
-            },
+            (response) => response,
             async (error) => {
-                console.error("Erro na resposta. Status:", error.response ? error.response.status : 'sem status'); // Verifica o status do erro
+                console.error("Erro na resposta. Status:", error.response ? error.response.status : 'sem status');
                 if (error.response && error.response.status === 401) {
-                    window.location.reload();
+                    window.location.reload(); // Recarrega a página em caso de erro de autenticação
                 }
-
                 return Promise.reject(error);
             }
         );
-
     }
 
+    // Iniciar sessão
     iniciarSessao(sessionId: string) {
-        return axiosInstance.get(`${this.url.replace(/\/+$/, '')}/session/start/${sessionId}`);
+        return axiosInstance.get(`${this.url}/session/start/${sessionId}`);
     }
 
-
-    // Nova função para obter o QR Code
+    // Obter QR Code
     async gerarQRCode(sessionId: string): Promise<Blob> {
         try {
             const response = await axiosInstance.get(`${this.url}/session/qr/${sessionId}/image`, {
-                responseType: 'blob', // Define o tipo de resposta como 'blob'
+                responseType: 'blob',
                 headers: {
                     'Accept': 'image/png',
-                    'x-api-key': process.env.API_KEY || '', // Adiciona a chave da API
+                    'x-api-key': process.env.NEXT_PUBLIC_API_KEY || ''
                 }
             });
 
-            // Verifica se a resposta não é um JSON de erro
             const contentType = response.headers['content-type'];
             if (contentType && contentType.includes('application/json')) {
-                const text = await response.data.text();
-                const jsonResponse = JSON.parse(text);
-                console.error("Erro no servidor:", jsonResponse.error || jsonResponse.message);
-                throw new Error(jsonResponse.error || jsonResponse.message);
+                const jsonResponse = await response.data.text();
+                const parsed = JSON.parse(jsonResponse);
+                throw new Error(parsed.error || parsed.message);
             }
 
-            return response.data; // Retorna o Blob se a resposta não for JSON
+            return response.data;  // Retorna o blob da imagem
         } catch (error) {
             console.error("Erro ao gerar o QR Code:", error);
-            throw error; // Rejeita a Promise em caso de erro
+            throw error;
         }
     }
 
-    // Nova função para verificar o status da sessão
+    // Verificar status da sessão
     verificarStatusSessao(sessionId: string) {
         return axiosInstance.get(`${this.url}/session/status/${sessionId}`);
     }
 
+    // Desconectar todas as sessões
     async desconectarTodasSessoes(): Promise<void> {
         try {
             await axiosInstance.get(`${this.url}/session/terminateAll`);
@@ -89,18 +81,14 @@ export class WhatsAppService {
         }
     }
 
+    // Enviar mensagem com botão
     async enviarMensagemComBotao(sessionId: string, chatId: string, messageBody: string, buttonText: string) {
-        //console.log(`${this.url}/client/sendMessage/${sessionId}`);
         const payload = {
-            chatId: `${chatId}@c.us`,  // Número de telefone + @c.us
+            chatId: `${chatId}@c.us`,
             contentType: "Buttons",
             content: {
                 body: messageBody,
-                buttons: [
-                    {
-                        body: buttonText
-                    }
-                ],
+                buttons: [{ body: buttonText }],
                 title: "Seja bem vindo!",
                 footer: "Escolha uma opção"
             }
@@ -115,20 +103,3 @@ export class WhatsAppService {
         }
     }
 }
-
-
-/* buscarPordId(id: number) {
-    return axiosInstance.get(this.url + "/" + id);
-}
-
-inserir(objeto: any) {
-    return axiosInstance.post(this.url, objeto);
-}
-
-alterar(objeto: any) {
-    return axiosInstance.put(this.url, objeto);
-}
-
-excluir(id: number) {
-    return axiosInstance.delete(this.url + "/" + id);
-} */
