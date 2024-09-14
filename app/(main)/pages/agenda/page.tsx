@@ -14,6 +14,7 @@ import { Toast } from 'primereact/toast';
 import { InputMask, InputMaskChangeEvent } from 'primereact/inputmask';
 import { RadioButton } from 'primereact/radiobutton';
 import { UsuarioService } from '../../../../service/UsuarioService';
+import { Projeto } from '../../../../types/types';
 
 let eventGuid = 0
 let todayStr = new Date().toISOString().replace(/T.*$/, '')

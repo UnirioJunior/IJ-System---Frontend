@@ -1,3 +1,5 @@
+import { S } from "@fullcalendar/core/internal-common";
+
 declare namespace Projeto {
     type Usuario = {
         id?: number;
@@ -32,5 +34,13 @@ declare namespace Projeto {
         inicio: string;
         fim: string;
     }
-
+    type ConfigWhatsApp = {
+        id?: number;
+        usuario: Usuario;
+        sessionId: string;
+        numUser: string;
+        mensagemPaciente: string;
+        mensagemNumUser: string;
+        isAtivo: boolean;
+    }
 }
