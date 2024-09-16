@@ -20,7 +20,7 @@ const AppMenu = () => {
                 { label: 'Meus Atendimentos', icon: 'pi pi-folder-open', to: '/pages/atendimentos' },
                 { label: 'Cadastro de Pacientes', icon: 'pi pi-user-plus', to: '/pages/paciente' },
                 { label: 'Agenda', icon: 'pi pi-calendar', to: '/pages/agenda' },
-                { label: 'WhatsApp', icon: 'pi pi-calendar', to: '/pages/whatsapp' },
+                { label: 'WhatsApp', icon: 'pi pi-whatsapp', to: '/pages/whatsapp' },
             ]
         },
 
